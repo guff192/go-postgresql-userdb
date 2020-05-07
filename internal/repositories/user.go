@@ -5,52 +5,28 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"go-postgresql-userdb/internal/model"
-	"go-postgresql-userdb/internal/utils"
 )
 
 const (
-	DB_USER          = "admin"
-	DB_NAME          = "userinfo"
-	DB_PASS          = ""
-	ScriptsDirectory = "./scripts"
-	CreateScript     = "schema.sql"
+	DB_USER = "admin"
+	DB_NAME = "userinfo"
+	DB_PASS = ""
 )
 
 type user struct{}
 
-func CreateDB() error {
-	db, err := openDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
-	queries, err := utils.Script(ScriptsDirectory, CreateScript)
-	if err != nil {
-		return err
-	}
-
-	for _, query := range queries {
-		_, err = db.Exec(query)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func openDB() (*sqlx.DB, error) {
+func OpenDB() (*sqlx.DB, error) {
 	dbinfo := fmt.Sprintf("postgres://%s:@localhost:5432/%s?sslmode=disable",
 		DB_USER, DB_NAME)
 	db, err := sqlx.Open("postgres", dbinfo)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error on connecting to db: %s", err)
 	}
 	return db, nil
 }
 
-func AddUser(u *model.User) error {
-	db, err := openDB()
+func AddUser(u model.User) error {
+	db, err := OpenDB()
 	if err != nil {
 		return err
 	}
@@ -64,8 +40,8 @@ func AddUser(u *model.User) error {
 	return nil
 }
 
-func GetUsers() (*[]model.User, error) {
-	db, err := openDB()
+func GetUsers() ([]model.User, error) {
+	db, err := OpenDB()
 	if err != nil {
 		return nil, err
 	}
@@ -78,11 +54,11 @@ func GetUsers() (*[]model.User, error) {
 		return nil, err
 	}
 
-	return &users, nil
+	return users, nil
 }
 
-func DelUser(id int) error {
-	db, err := openDB()
+func DeleteUser(id int) error {
+	db, err := OpenDB()
 	if err != nil {
 		return err
 	}
@@ -95,8 +71,8 @@ func DelUser(id int) error {
 	return nil
 }
 
-func UpdUser(id int, u *model.User) error {
-	db, err := openDB()
+func UpdateUser(id int, u model.User) error {
+	db, err := OpenDB()
 	if err != nil {
 		return err
 	}

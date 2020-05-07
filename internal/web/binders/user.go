@@ -1,7 +1,8 @@
-package utils
+package binders
 
 import (
 	"encoding/json"
+	"fmt"
 	"go-postgresql-userdb/internal/model"
 	"io"
 	"strconv"
@@ -17,17 +18,17 @@ var user struct {
 	Birthdate string
 }
 
-func ParseUser(rawData io.Reader) (*model.User, error) {
+func ParseUser(rawData io.Reader) (model.User, error) {
 	decoder := json.NewDecoder(rawData)
 	err := decoder.Decode(&user)
 	if err != nil {
-		return nil, err
+		return model.User{}, fmt.Errorf("error on jsonDecode: %s", err)
 	}
 	birthdate, err := parseDate(user.Birthdate)
 	if err != nil {
-		return nil, err
+		return model.User{}, fmt.Errorf("error on parsing date: %s", err)
 	}
-	user := &model.User{
+	user := model.User{
 		Id:        user.Id,
 		Name:      user.Name,
 		Lastname:  user.Lastname,
@@ -37,13 +38,13 @@ func ParseUser(rawData io.Reader) (*model.User, error) {
 	return user, nil
 }
 
-func EncodeUsers(users []model.User) (string, error) {
-	jsonBytes, err := json.MarshalIndent(users, "", "  ")
-	if err != nil {
-		return "", err
+func EncodeUsers(w io.Writer, users interface{}) error {
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(users); err != nil {
+		return fmt.Errorf("error on jsonEncode: %s", err)
 	}
-	jsonString := string(jsonBytes)
-	return jsonString, nil
+	return nil
 }
 
 func parseDate(sDate string) (*time.Time, error) {

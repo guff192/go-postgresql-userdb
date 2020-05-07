@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func Script(dirname, filename string) ([]string, error) {
+func GetScript(dirname, filename string) ([]string, error) {
 	dirname, err := filepath.Abs(dirname)
 	if err != nil {
 		return nil, err
