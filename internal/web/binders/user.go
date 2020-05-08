@@ -1,69 +1,33 @@
 package binders
 
 import (
-	"encoding/json"
 	"fmt"
-	"go-postgresql-userdb/internal/model"
-	"io"
+	"github.com/gorilla/context"
+	"github.com/gorilla/mux"
+	"net/http"
 	"strconv"
-	"strings"
-	"time"
 )
 
-var user struct {
-	Id        int
-	Name      string
-	Lastname  string
-	Age       int
-	Birthdate string
-}
+type key int
 
-func ParseUser(rawData io.Reader) (model.User, error) {
-	decoder := json.NewDecoder(rawData)
-	err := decoder.Decode(&user)
-	if err != nil {
-		return model.User{}, fmt.Errorf("error on jsonDecode: %s", err)
-	}
-	birthdate, err := parseDate(user.Birthdate)
-	if err != nil {
-		return model.User{}, fmt.Errorf("error on parsing date: %s", err)
-	}
-	user := model.User{
-		Id:        user.Id,
-		Name:      user.Name,
-		Lastname:  user.Lastname,
-		Age:       user.Age,
-		Birthdate: *birthdate,
-	}
-	return user, nil
-}
+const ID key = 0
 
-func EncodeUsers(w io.Writer, users interface{}) error {
-	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(users); err != nil {
-		return fmt.Errorf("error on jsonEncode: %s", err)
-	}
-	return nil
-}
+func IDBinder(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		strID, ok := vars["id"]
+		if !ok {
+			http.Error(w, "missing id", http.StatusBadRequest)
+			return
+		}
 
-func parseDate(sDate string) (*time.Time, error) {
-	dateSl := strings.Split(sDate, "-")
-	y, err := strconv.Atoi(dateSl[0])
-	if err != nil {
-		return nil, err
-	}
+		id, err := strconv.Atoi(strID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("bad id: %s", err), http.StatusBadRequest)
+			return
+		}
 
-	m, err := strconv.Atoi(dateSl[1])
-	if err != nil {
-		return nil, err
+		context.Set(r, ID, id)
+		h.ServeHTTP(w, r)
 	}
-
-	d, err := strconv.Atoi(dateSl[2])
-	if err != nil {
-		return nil, err
-	}
-
-	date := time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC)
-	return &date, nil
 }

@@ -13,6 +13,18 @@ const (
 	DB_PASS = ""
 )
 
+type User interface {
+	AddUser(usr model.User) error
+	DeleteUser(id int) error
+	GetUserList() ([]model.User, error)
+	UpdateUser(id int, usr model.User) error
+}
+
+// NewUser creates a new User repository
+func NewUser() User {
+	return &user{}
+}
+
 type user struct{}
 
 func OpenDB() (*sqlx.DB, error) {
@@ -25,7 +37,7 @@ func OpenDB() (*sqlx.DB, error) {
 	return db, nil
 }
 
-func AddUser(u model.User) error {
+func (u *user) AddUser(usr model.User) error {
 	db, err := OpenDB()
 	if err != nil {
 		return err
@@ -33,14 +45,14 @@ func AddUser(u model.User) error {
 	defer db.Close()
 
 	query := "INSERT INTO users (id, name, lastname, age, birthdate) VALUES($1, $2, $3, $4, $5)"
-	_, err = db.Exec(query, u.Id, u.Name, u.Lastname, u.Age, u.Birthdate)
+	_, err = db.Exec(query, usr.Id, usr.Name, usr.Lastname, usr.Age, usr.Birthdate)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func GetUsers() ([]model.User, error) {
+func (u *user) GetUserList() ([]model.User, error) {
 	db, err := OpenDB()
 	if err != nil {
 		return nil, err
@@ -57,7 +69,7 @@ func GetUsers() ([]model.User, error) {
 	return users, nil
 }
 
-func DeleteUser(id int) error {
+func (u *user) DeleteUser(id int) error {
 	db, err := OpenDB()
 	if err != nil {
 		return err
@@ -71,7 +83,7 @@ func DeleteUser(id int) error {
 	return nil
 }
 
-func UpdateUser(id int, u model.User) error {
+func (u *user) UpdateUser(id int, usr model.User) error {
 	db, err := OpenDB()
 	if err != nil {
 		return err
@@ -79,7 +91,7 @@ func UpdateUser(id int, u model.User) error {
 	defer db.Close()
 
 	query := "UPDATE users SET id=$1, name=$2, lastname=$3, age=$4, birthdate=$5 WHERE id=$6"
-	_, err = db.Exec(query, u.Id, u.Name, u.Lastname, u.Age, u.Birthdate, id)
+	_, err = db.Exec(query, usr.Id, usr.Name, usr.Lastname, usr.Age, usr.Birthdate, id)
 	if err != nil {
 		return err
 	}
