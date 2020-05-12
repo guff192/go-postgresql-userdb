@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -13,11 +14,13 @@ const (
 	DB_PASS = ""
 )
 
+var db *sqlx.DB
+
 type User interface {
-	AddUser(usr model.User) error
-	DeleteUser(id int) error
-	GetUserList() ([]model.User, error)
-	UpdateUser(id int, usr model.User) error
+	AddUser(tx *sql.Tx, usr model.User) error
+	DeleteUser(tx *sql.Tx, id int) error
+	GetUserList(tx *sql.Tx) ([]model.User, error)
+	UpdateUser(tx *sql.Tx, id int, usr model.User) error
 }
 
 // NewUser creates a new User repository
@@ -37,31 +40,25 @@ func OpenDB() (*sqlx.DB, error) {
 	return db, nil
 }
 
-func (u *user) AddUser(usr model.User) error {
-	db, err := OpenDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
+func (u *user) AddUser(tx *sql.Tx, usr model.User) error {
 	query := "INSERT INTO users (id, name, lastname, age, birthdate) VALUES($1, $2, $3, $4, $5)"
-	_, err = db.Exec(query, usr.Id, usr.Name, usr.Lastname, usr.Age, usr.Birthdate)
+
+	_, err := tx.Exec(query, usr.Id, usr.Name, usr.Lastname, usr.Age, usr.Birthdate)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (u *user) GetUserList() ([]model.User, error) {
-	db, err := OpenDB()
+func (u *user) GetUserList(tx *sql.Tx) ([]model.User, error) {
+	var users []model.User
+	query := "SELECT * FROM users;"
+	rows, err := tx.Query(query)
 	if err != nil {
 		return nil, err
 	}
-	defer db.Close()
 
-	var users []model.User
-	query := "SELECT * FROM users;"
-	err = db.Select(&users, query)
+	users, err = processRows(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -69,31 +66,44 @@ func (u *user) GetUserList() ([]model.User, error) {
 	return users, nil
 }
 
-func (u *user) DeleteUser(id int) error {
-	db, err := OpenDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
+func (u *user) DeleteUser(tx *sql.Tx, id int) error {
+	query := "DELETE FROM users WHERE id=$1"
 
-	_, err = db.Exec("DELETE FROM users WHERE id=$1", id)
+	_, err := tx.Exec(query, id)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (u *user) UpdateUser(id int, usr model.User) error {
-	db, err := OpenDB()
-	if err != nil {
-		return err
-	}
-	defer db.Close()
-
+func (u *user) UpdateUser(tx *sql.Tx, id int, usr model.User) error {
 	query := "UPDATE users SET id=$1, name=$2, lastname=$3, age=$4, birthdate=$5 WHERE id=$6"
-	_, err = db.Exec(query, usr.Id, usr.Name, usr.Lastname, usr.Age, usr.Birthdate, id)
+
+	_, err := tx.Exec(query, usr.Id, usr.Name, usr.Lastname, usr.Age, usr.Birthdate, id)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func processRows(rows *sql.Rows) ([]model.User, error) {
+	defer rows.Close()
+
+	users := make([]model.User, 0)
+
+	for rows.Next() {
+		user := model.User{}
+		err := rows.Scan(&user.Id, &user.Name, &user.Lastname, &user.Age, &user.Birthdate)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	err := rows.Err()
+	if err != nil {
+		return nil, err
+	}
+
+	return users, nil
 }

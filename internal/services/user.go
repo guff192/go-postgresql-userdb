@@ -1,6 +1,7 @@
 package services
 
 import (
+	"go-postgresql-userdb/internal/datasource"
 	"go-postgresql-userdb/internal/model"
 	"go-postgresql-userdb/internal/repositories"
 )
@@ -22,29 +23,61 @@ type user struct {
 }
 
 func (u *user) AddUser(user model.User) error {
-	if err := u.repository.AddUser(user); err != nil {
+	tx, err := datasource.SQL.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = datasource.CloseTransaction(tx, err)
+	}()
+
+	if err := u.repository.AddUser(tx, user); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (u *user) GetUserList() ([]model.User, error) {
-	users, err := u.repository.GetUserList()
+	tx, err := datasource.SQL.Begin()
 	if err != nil {
-		return []model.User{}, err
+		return nil, err
+	}
+	defer func() {
+		err = datasource.CloseTransaction(tx, err)
+	}()
+
+	users, err := u.repository.GetUserList(tx)
+	if err != nil {
+		return nil, err
 	}
 	return users, nil
 }
 
 func (u *user) DeleteUser(id int) error {
-	if err := u.repository.DeleteUser(id); err != nil {
+	tx, err := datasource.SQL.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = datasource.CloseTransaction(tx, err)
+	}()
+
+	if err := u.repository.DeleteUser(tx, id); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (u *user) UpdateUser(id int, user model.User) error {
-	if err := u.repository.UpdateUser(id, user); err != nil {
+	tx, err := datasource.SQL.Begin()
+	if err != nil {
+		return err
+	}
+	defer func() {
+		err = datasource.CloseTransaction(tx, err)
+	}()
+
+	if err := u.repository.UpdateUser(tx, id, user); err != nil {
 		return err
 	}
 	return nil

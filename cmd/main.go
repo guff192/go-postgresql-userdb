@@ -1,15 +1,20 @@
 package main
 
 import (
-	"go-postgresql-userdb/internal/datsource"
+	"go-postgresql-userdb/internal/datasource"
+	"go-postgresql-userdb/internal/init/startup"
 	"go-postgresql-userdb/internal/web"
 	"log"
 )
 
 func main() {
-	err := datsource.CreateDB()
+	iniData, err := startup.Configuration()
 	if err != nil {
-		log.Fatal("error on repositories.CreateDB: ", err)
+		log.Fatal("error on parsing config: ", err)
 	}
-	web.Run()
+	err = datasource.InitSQL(iniData)
+	if err != nil {
+		log.Fatal("error on datasource.InitSQL: ", err)
+	}
+	web.Run(iniData)
 }

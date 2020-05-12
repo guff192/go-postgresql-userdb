@@ -1,7 +1,9 @@
 package web
 
 import (
+	"fmt"
 	"github.com/gorilla/mux"
+	"go-postgresql-userdb/internal/init/startup"
 	"go-postgresql-userdb/internal/repositories"
 	"go-postgresql-userdb/internal/services"
 	"go-postgresql-userdb/internal/web/binders"
@@ -10,11 +12,11 @@ import (
 	"net/http"
 )
 
-func Run() {
+func Run(iniData *startup.IniData) {
 	router := mux.NewRouter()
 	handleRoutes(router)
 
-	err := http.ListenAndServe(":9090", router)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", iniData.Port), router)
 	if err != nil {
 		log.Fatal("unexpected error while ListenAndServe: ", err)
 	}

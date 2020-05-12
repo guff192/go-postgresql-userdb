@@ -1,0 +1,8 @@
+{
+  "Port": 8080,
+  "DBName": "userinfo",
+  "DBHost": "localhost",
+  "DBPort": 5432,
+  "UserName": "admin",
+  "UserPassword": ""
+}
