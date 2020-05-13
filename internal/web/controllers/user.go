@@ -6,12 +6,10 @@ import (
 	"github.com/gorilla/context"
 	"go-postgresql-userdb/internal/model"
 	"go-postgresql-userdb/internal/services"
+	"go-postgresql-userdb/internal/utils"
 	"go-postgresql-userdb/internal/web/binders"
 	"io"
 	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 type User interface {
@@ -79,11 +77,6 @@ func (u *user) DeleteUser(w http.ResponseWriter, r *http.Request) {
 func (u *user) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	id := context.Get(r, binders.ID).(int)
 
-	if err := r.ParseForm(); err != nil {
-		message := fmt.Sprint("error on parsing form: ", err)
-		http.Error(w, message, http.StatusInternalServerError)
-		return
-	}
 	user, err := parseUser(r.Body)
 	if err != nil {
 		message := fmt.Sprint("error on parsing user data from form: ", err)
@@ -112,7 +105,7 @@ func parseUser(rawData io.Reader) (model.User, error) {
 	if err != nil {
 		return model.User{}, fmt.Errorf("error on jsonDecode: %s", err)
 	}
-	birthdate, err := parseDate(user.Birthdate)
+	birthdate, err := utils.ParseDate(user.Birthdate)
 	if err != nil {
 		return model.User{}, fmt.Errorf("error on parsing date: %s", err)
 	}
@@ -133,25 +126,4 @@ func encodeUsers(w io.Writer, users interface{}) error {
 		return fmt.Errorf("error on jsonEncode: %s", err)
 	}
 	return nil
-}
-
-func parseDate(sDate string) (*time.Time, error) {
-	dateSl := strings.Split(sDate, "-")
-	y, err := strconv.Atoi(dateSl[0])
-	if err != nil {
-		return nil, err
-	}
-
-	m, err := strconv.Atoi(dateSl[1])
-	if err != nil {
-		return nil, err
-	}
-
-	d, err := strconv.Atoi(dateSl[2])
-	if err != nil {
-		return nil, err
-	}
-
-	date := time.Date(y, time.Month(m), d, 0, 0, 0, 0, time.UTC)
-	return &date, nil
 }

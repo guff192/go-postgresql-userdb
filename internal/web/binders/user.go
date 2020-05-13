@@ -12,7 +12,7 @@ type key int
 
 const ID key = 0
 
-func IDBinder(h http.HandlerFunc) http.HandlerFunc {
+func Id(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		strID, ok := vars["id"]
@@ -25,6 +25,14 @@ func IDBinder(h http.HandlerFunc) http.HandlerFunc {
 		if err != nil {
 			http.Error(w, fmt.Sprintf("bad id: %s", err), http.StatusBadRequest)
 			return
+		}
+
+		if r.Method == http.MethodPut {
+			if err := r.ParseForm(); err != nil {
+				message := fmt.Sprint("error on parsing form: ", err)
+				http.Error(w, message, http.StatusInternalServerError)
+				return
+			}
 		}
 
 		context.Set(r, ID, id)

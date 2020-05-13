@@ -28,9 +28,9 @@ func handleRoutes(router *mux.Router) {
 	router.HandleFunc("/users", controller.AddUser).Methods(http.MethodPost)
 	router.HandleFunc("/users", controller.GetUserList).Methods(http.MethodGet)
 	router.HandleFunc("/users/:{id:[0-9]+}",
-		binders.IDBinder(controller.DeleteUser)).Methods(http.MethodDelete)
+		binders.Id(controller.DeleteUser)).Methods(http.MethodDelete)
 	router.HandleFunc("/users/:{id:[0-9]+}",
-		binders.IDBinder(controller.UpdateUser)).Methods(http.MethodPut)
+		binders.Id(controller.UpdateUser)).Methods(http.MethodPut)
 }
 
 func newController() controllers.User {
